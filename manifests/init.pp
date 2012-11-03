@@ -20,29 +20,22 @@
 #
 # Sample Usage:  include nginx
 class nginx (
-  $ruby_version = 'ruby-1.9.3-p125',
-  $passenger_version = '3.0.12',
   $logdir = '/var/log/nginx',
   $installdir = '/opt/nginx',
   $www    = '/var/www' ) {
 
     $options = "--auto --auto-download  --prefix=${installdir}"
-    $passenger_deps = [ 'libcurl4-openssl-dev' ]
+    $passenger_deps = ['libcurl4-openssl-dev','ruby-dev']
 
-    include rvm
 
     package { $passenger_deps: ensure => present }
 
-    rvm_system_ruby {
-      $ruby_version:
-        ensure      => 'present',
-        default_use => true;
-    }
+   package {
+       'passenger':
+         ensure => latest,
+         provider => gem;
+   }
 
-    rvm_gem {
-      "${ruby_version}/passenger":
-        ensure => $passenger_version,
-    }
 
     exec { 'create container':
       command => "/bin/mkdir ${www} && /bin/chown www-data:www-data ${www}",
@@ -51,10 +44,10 @@ class nginx (
     }
 
     exec { 'nginx-install':
-      command => "/bin/bash -l -i -c \"/usr/local/rvm/gems/${ruby_version}/bin/passenger-install-nginx-module ${options}\"",
+      command => "/usr/local/bin/passenger-install-nginx-module --auto --auto-download --prefix=/opt/nginx",
       group   => 'root',
       unless  => "/usr/bin/test -d ${installdir}",
-      require => [ Package[$dependencies_passenger], Rvm_system_ruby[$ruby_version], Rvm_gem["${ruby_version}/passenger"]];
+      require => [ Package[$passenger_deps], Package["passenger"]];
     }
 
     file { 'nginx-config':
