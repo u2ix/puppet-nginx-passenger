@@ -1,6 +1,6 @@
-# Class: nginx
+# Class: nginx_passenger
 #
-# This module installs Nginx and its default configuration using rvm as the provider.
+# This module installs Nginx and its default configuration.
 #
 # Parameters:
 #   $ruby_version
@@ -15,88 +15,21 @@
 #      Base directory for
 # Actions:
 #
-# Requires:
-#    puppet-rvm
-#
-# Sample Usage:  include nginx
-class nginx (
-  $ruby_version = 'ruby-1.9.3-p125',
-  $passenger_version = '3.0.12',
+# Sample Usage:  include nginx_passenger
+class nginx_passenger (
+  $ruby_version = '1.9.1',
+  $passenger_version = '4.0.40',
   $logdir = '/var/log/nginx',
   $installdir = '/opt/nginx',
-  $www    = '/var/www' ) {
+  $www    = '/var/www',
+  $nginx_source_dir = '',
+  $nginx_extra_configure_flags = '') {
 
-    $options = "--auto --auto-download  --prefix=${installdir}"
-    $passenger_deps = [ 'libcurl4-openssl-dev' ]
 
-    include rvm
-
-    package { $passenger_deps: ensure => present }
-
-    rvm_system_ruby {
-      $ruby_version:
-        ensure      => 'present',
-        default_use => true;
-    }
-
-    rvm_gem {
-      "${ruby_version}/passenger":
-        ensure => $passenger_version,
-    }
-
-    exec { 'create container':
-      command => "/bin/mkdir ${www} && /bin/chown www-data:www-data ${www}",
-      unless  => "/usr/bin/test -d ${www}",
-      before  => Exec['nginx-install']
-    }
-
-    exec { 'nginx-install':
-      command => "/bin/bash -l -i -c \"/usr/local/rvm/gems/${ruby_version}/bin/passenger-install-nginx-module ${options}\"",
-      group   => 'root',
-      unless  => "/usr/bin/test -d ${installdir}",
-      require => [ Package[$dependencies_passenger], Rvm_system_ruby[$ruby_version], Rvm_gem["${ruby_version}/passenger"]];
-    }
-
-    file { 'nginx-config':
-      path    => "${installdir}/conf/nginx.conf",
-      owner   => 'root',
-      group   => 'root',
-      mode    => '0644',
-      content => template('nginx/nginx.conf.erb'),
-      require => Exec['nginx-install'],
-    }
-
-    exec { 'create sites-conf':
-      path    => ['/usr/bin','/bin'],
-      unless  => "/usr/bin/test -d  ${installdir}/conf/sites-available && /usr/bin/test -d ${installdir}/conf/sites-enabled",
-      command => "/bin/mkdir  ${installdir}/conf/sites-available && /bin/mkdir ${installdir}/conf/sites-enabled",
-      require => Exec['nginx-install'],
-    }
-
-    file { 'nginx-service':
-      path      => '/etc/init.d/nginx',
-      owner     => 'root',
-      group     => 'root',
-      mode      => '0755',
-      content   => template('nginx/nginx.init.erb'),
-      require   => File['nginx-config'],
-      subscribe => File['nginx-config'],
-    }
-
-    file { $logdir:
-      ensure => directory,
-      owner  => 'root',
-      group  => 'root',
-      mode   => '0644'
-    }
-
-    service { 'nginx':
-      ensure     => running,
-      enable     => true,
-      hasrestart => true,
-      hasstatus  => true,
-      subscribe  => File['nginx-config'],
-      require    => [ File[$logdir], File['nginx-service']],
-    }
-
+  anchor { 'nginx_passenger::begin': } ->
+  class { '::nginx_passenger::package': } ->
+  class { '::nginx_passenger::install': } ->
+  class { '::nginx_passenger::config': } ->
+  class { '::nginx_passenger::service': } ->
+  anchor { 'nginx_passenger::end': }
 }
