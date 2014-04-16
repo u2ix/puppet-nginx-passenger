@@ -4,7 +4,7 @@ server {
       server_name <%= @host %>;
       root <%= @root %>;
 
-      access_log <%= scope['nginx_passenger::logdir'] %>/<%= @host %>_access.log;
-      error_log  <%= scope['nginx_passenger::logdir'] %>/<%= @host %>_error.log;
+      access_log <%= scope['nginx_passenger::logdir'] %>/<%= @name %>_access.log;
+      error_log  <%= scope['nginx_passenger::logdir'] %>/<%= @name %>_error.log;
 
 }

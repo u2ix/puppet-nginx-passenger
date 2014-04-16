@@ -27,7 +27,7 @@
 define nginx_passenger::vhost(
   $host = $name,
   $port = '80',
-  $root    = "${host}",
+  $root,
   $makeroot = true,
   $rails = false,
 ){
@@ -49,22 +49,22 @@ define nginx_passenger::vhost(
 
   file { $host:
     ensure  => present,
-    path    => "${nginx_passenger::installdir}/conf/sites-available/${host}",
+    path    => "${nginx_passenger::installdir}/conf/sites-available/${name}",
     owner   => 'root',
     group   => 'root',
     mode    => '0644',
     content => template("nginx_passenger/${template}"),
   }
 
-  file { "${nginx_passenger::installdir}/conf/sites-enabled/${host}":
+  file { "${nginx_passenger::installdir}/conf/sites-enabled/${name}":
     ensure  => link,
-    target  => "${nginx_passenger::installdir}/conf/sites-available/${host}",
+    target  => "${nginx_passenger::installdir}/conf/sites-available/${name}",
     require => File[$host],
   }
 
   exec { "nginx ${host}":
     command => '/etc/init.d/nginx restart',
-    require => File["${nginx_passenger::installdir}/conf/sites-enabled/${host}"],
+    require => File["${nginx_passenger::installdir}/conf/sites-enabled/${name}"],
   }
 }
 
