@@ -8,4 +8,3 @@ description 'Module for Nginx configuration'
 project_page 'https://github.com/sgmac/puppet-nginx'
 
 ## Add dependencies, if any:
-dependency 'blt04/puppet-rvm'
